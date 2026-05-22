@@ -1,0 +1,13 @@
+{
+  "name": "stackchan-bridge",
+  "version": "1.0.0",
+  "description": "Bridge between Claude Code hooks and StackChan via WebSocket",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "action": "node action.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "backendServer": "YOUR_SERVER_IP:12800",
+  "token": "YOUR_LOGIN_TOKEN",
+  "deviceMac": "YOUR_DEVICE_MAC",
+  "deviceId": "YOUR_DEVICE_UUID",
+  "serverPublicKey": "-----BEGIN PUBLIC KEY-----\nYOUR_RSA_PUBLIC_KEY\n-----END PUBLIC KEY-----"
+}
