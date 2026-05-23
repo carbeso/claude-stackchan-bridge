@@ -5,7 +5,7 @@
 ## 架構
 
 ```
-Harness Hooks (Claude/Hermes/...) → action.js (or HTTP) → server.js (Bridge) → Provider → StackChan
+Harness Hooks (Claude/Hermes/...) → harnesses/<name>/action.js (or HTTP) → server.js (Bridge) → Provider → StackChan
 ```
 
 - **Harnesses**: 支援 Claude Code, Hermes Agent 等。
@@ -91,19 +91,19 @@ npx pm2 start server.js --name stackchan
     "PreToolUse": [
       {
         "matcher": "*",
-        "hooks": [{ "type": "command", "command": "node ~/.claude/plugins/stackchan/action.js tool" }]
+        "hooks": [{ "type": "command", "command": "node ~/.claude/plugins/stackchan/harnesses/claude/action.js tool" }]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "*",
-        "hooks": [{ "type": "command", "command": "if [ \"$TOOL_EXIT_CODE\" != \"0\" ]; then node ~/.claude/plugins/stackchan/action.js error; fi" }]
+        "hooks": [{ "type": "command", "command": "if [ \"$TOOL_EXIT_CODE\" != \"0\" ]; then node ~/.claude/plugins/stackchan/harnesses/claude/action.js error; fi" }]
       }
     ],
     "Stop": [
       {
         "matcher": "",
-        "hooks": [{ "type": "command", "command": "node ~/.claude/plugins/stackchan/action.js done" }]
+        "hooks": [{ "type": "command", "command": "node ~/.claude/plugins/stackchan/harnesses/claude/action.js done" }]
       }
     ]
   }

@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "action": "node action.js"
+    "action": "node harnesses/claude/action.js"
   },
   "dependencies": {
     "ws": "^8.16.0"
