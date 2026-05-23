@@ -2,6 +2,7 @@ const http = require('http');
 
 const action = process.argv[2];
 if (!action) {
+  console.log('Usage: node action.js <action_name>');
   process.exit(0);
 }
 
@@ -17,7 +18,9 @@ const req = http.request({
   res.resume();
 });
 
-req.on('error', () => {});
+req.on('error', (err) => {
+  console.error(`[action] Error: ${err.message}`);
+});
 req.on('timeout', () => { req.destroy(); });
 req.write(data);
 req.end();

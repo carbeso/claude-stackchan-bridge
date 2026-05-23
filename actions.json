@@ -1,0 +1,38 @@
+{
+  "working": [
+    { "type": "motion", "yaw": 0, "pitch": 600, "speed": 300 }
+  ],
+  "done": [
+    { "type": "motion", "yaw": 0, "pitch": 200, "speed": 500, "delay": 0 },
+    { "type": "motion", "yaw": 0, "pitch": 500, "speed": 500, "delay": 400 },
+    { "type": "motion", "yaw": 0, "pitch": 200, "speed": 500, "delay": 800 },
+    { "type": "motion", "yaw": 0, "pitch": 450, "speed": 300, "delay": 1200 }
+  ],
+  "tool": [
+    { "type": "motion", "yaw": -400, "pitch": 450, "speed": 600, "delay": 0 },
+    { "type": "motion", "yaw": 400, "pitch": 450, "speed": 600, "delay": 500 },
+    { "type": "motion", "yaw": 0, "pitch": 450, "speed": 400, "delay": 1000 }
+  ],
+  "error": [
+    { "type": "motion", "yaw": -300, "pitch": 450, "speed": 700, "delay": 0 },
+    { "type": "motion", "yaw": 300, "pitch": 450, "speed": 700, "delay": 250 },
+    { "type": "motion", "yaw": -300, "pitch": 450, "speed": 700, "delay": 500 },
+    { "type": "motion", "yaw": 300, "pitch": 450, "speed": 700, "delay": 750 },
+    { "type": "motion", "yaw": 0, "pitch": 450, "speed": 400, "delay": 1000 }
+  ],
+  "idle": [
+    { "type": "motion", "yaw": 0, "pitch": 450, "speed": 200 }
+  ],
+  "thinking": [
+    { "type": "motion", "yaw": 0, "pitch": 500, "speed": 100 }
+  ],
+  "startup": [
+    { "type": "motion", "yaw": 0, "pitch": 450, "speed": 500 }
+  ],
+  "shutdown": [
+    { "type": "motion", "yaw": 0, "pitch": 800, "speed": 500 }
+  ],
+  "talking": [
+    { "type": "motion", "yaw": 0, "pitch": 450, "speed": 500 }
+  ]
+}
