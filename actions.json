@@ -3,10 +3,24 @@
     { "type": "motion", "yaw": 0, "pitch": 600, "speed": 300 }
   ],
   "done": [
-    { "type": "motion", "yaw": 0, "pitch": 200, "speed": 500, "delay": 0 },
-    { "type": "motion", "yaw": 0, "pitch": 500, "speed": 500, "delay": 400 },
-    { "type": "motion", "yaw": 0, "pitch": 200, "speed": 500, "delay": 800 },
-    { "type": "motion", "yaw": 0, "pitch": 450, "speed": 300, "delay": 1200 }
+    {
+      "type": "avatar",
+      "leftEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 40 },
+      "rightEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 40 },
+      "mouth": { "x": 0, "y": 20, "rotation": 0, "weight": 35, "size": 0 },
+      "delay": 0
+    },
+    { "type": "motion", "yaw": 0, "pitch": 200, "speed": 400, "delay": 0 },
+    { "type": "motion", "yaw": 0, "pitch": 500, "speed": 400, "delay": 400 },
+    { "type": "motion", "yaw": 0, "pitch": 200, "speed": 400, "delay": 800 },
+    { "type": "motion", "yaw": 0, "pitch": 450, "speed": 300, "delay": 1200 },
+    {
+      "type": "avatar",
+      "leftEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 0 },
+      "rightEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 0 },
+      "mouth": { "x": 0, "y": 0, "rotation": 0, "weight": 0, "size": 0 },
+      "delay": 1500
+    }
   ],
   "tool": [
     { "type": "motion", "yaw": -400, "pitch": 450, "speed": 600, "delay": 0 },
@@ -14,17 +28,45 @@
     { "type": "motion", "yaw": 0, "pitch": 450, "speed": 400, "delay": 1000 }
   ],
   "error": [
-    { "type": "motion", "yaw": -300, "pitch": 450, "speed": 700, "delay": 0 },
-    { "type": "motion", "yaw": 300, "pitch": 450, "speed": 700, "delay": 250 },
-    { "type": "motion", "yaw": -300, "pitch": 450, "speed": 700, "delay": 500 },
-    { "type": "motion", "yaw": 300, "pitch": 450, "speed": 700, "delay": 750 },
-    { "type": "motion", "yaw": 0, "pitch": 450, "speed": 400, "delay": 1000 }
+    {
+      "type": "avatar",
+      "leftEye": { "x": 0, "y": 0, "rotation": 0, "weight": 50, "size": -30 },
+      "rightEye": { "x": 0, "y": 0, "rotation": 0, "weight": 50, "size": -30 },
+      "mouth": { "x": 0, "y": 30, "rotation": 0, "weight": 70, "size": 0 },
+      "delay": 0
+    },
+    { "type": "motion", "yaw": -300, "pitch": 450, "speed": 400, "delay": 0 },
+    { "type": "motion", "yaw": 300, "pitch": 450, "speed": 400, "delay": 250 },
+    { "type": "motion", "yaw": -300, "pitch": 450, "speed": 400, "delay": 500 },
+    { "type": "motion", "yaw": 300, "pitch": 450, "speed": 400, "delay": 750 },
+    { "type": "motion", "yaw": 0, "pitch": 450, "speed": 400, "delay": 1000 },
+    {
+      "type": "avatar",
+      "leftEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 0 },
+      "rightEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 0 },
+      "mouth": { "x": 0, "y": 0, "rotation": 0, "weight": 0, "size": 0 },
+      "delay": 1800
+    }
   ],
   "idle": [
-    { "type": "motion", "yaw": 0, "pitch": 450, "speed": 200 }
+    {
+      "type": "avatar",
+      "leftEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 0 },
+      "rightEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 0 },
+      "mouth": { "x": 0, "y": 0, "rotation": 0, "weight": 0, "size": 0 },
+      "delay": 0
+    },
+    { "type": "motion", "yaw": 0, "pitch": 450, "speed": 200, "delay": 0 }
   ],
   "thinking": [
-    { "type": "motion", "yaw": 0, "pitch": 500, "speed": 100 }
+    {
+      "type": "avatar",
+      "leftEye": { "x": 40, "y": -10, "rotation": 0, "weight": 85, "size": 0 },
+      "rightEye": { "x": 40, "y": -10, "rotation": 0, "weight": 85, "size": 0 },
+      "mouth": { "x": 0, "y": 0, "rotation": 0, "weight": 0, "size": 0 },
+      "delay": 0
+    },
+    { "type": "motion", "yaw": 0, "pitch": 500, "speed": 100, "delay": 0 }
   ],
   "startup": [
     { "type": "motion", "yaw": 0, "pitch": 450, "speed": 500 }
