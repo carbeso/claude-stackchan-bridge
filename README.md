@@ -34,6 +34,16 @@ cp config.example.json config.json
 # 編輯 config.json 填入你的連線資訊
 ```
 
+### 配置驗證
+
+編輯 `actions.json` 後，建議執行驗證以確保格式正確：
+
+```bash
+node -e "const {validateActions} = require('./lib/validate-actions'); const actions = require('./actions.json'); validateActions(actions);"
+```
+
+如果配置有誤，會顯示詳細的錯誤訊息。Server 啟動時也會自動驗證配置。
+
 ## 取得連線資訊
 
 1. 登入取得 token：
@@ -61,7 +71,12 @@ node server.js
 ## 擴充
 
 ### 新增動作
-編輯 `actions.json`，可以定義多個步驟與延遲（delay）：
+
+編輯 `actions.json`，可以定義多個步驟與延遲（delay）。支援兩種動作類型：
+
+#### Motion（動作）
+
+控制伺服機（轉頭、點頭）：
 
 ```json
 "my_action": [
@@ -69,6 +84,42 @@ node server.js
   { "type": "motion", "yaw": 0, "pitch": 450, "speed": 300, "delay": 500 }
 ]
 ```
+
+#### Avatar（表情）
+
+控制眼睛與嘴巴：
+
+```json
+"happy": [
+  { 
+    "type": "avatar", 
+    "leftEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 40 },
+    "rightEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 40 },
+    "mouth": { "x": 0, "y": 20, "rotation": 0, "weight": 35, "size": 0 },
+    "delay": 0
+  }
+]
+```
+
+#### 組合範例
+
+動作與表情可以混合使用：
+
+```json
+"thinking": [
+  { 
+    "type": "avatar", 
+    "leftEye": { "x": 40, "y": -10, "rotation": 0, "weight": 85, "size": 0 },
+    "rightEye": { "x": 40, "y": -10, "rotation": 0, "weight": 85, "size": 0 },
+    "mouth": { "x": 0, "y": 0, "rotation": 0, "weight": 0, "size": 0 }
+  },
+  { "type": "motion", "yaw": 0, "pitch": 500, "speed": 100 }
+]
+```
+
+**參數規格請參考：**
+- Motion 參數：[issue #1](https://github.com/carbeso/claude-stackchan-bridge/issues/1)
+- Avatar 參數：`EXPRESSIONS.md`
 
 ### 支援新 Harness
 
