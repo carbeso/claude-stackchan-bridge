@@ -50,15 +50,23 @@ class OriginStackChanProvider {
    * @param {object} jsonData 酬載內容
    */
   sendBinary(msgType, jsonData) {
-    if (!this.ws || !this.connected) return false;
-    const macBuf = Buffer.from(this.config.deviceMac, 'utf8');
-    const dataBuf = Buffer.from(JSON.stringify(jsonData));
-    const payload = Buffer.concat([macBuf, dataBuf]);
-    const header = Buffer.alloc(5);
-    header.writeUInt8(msgType, 0);
-    header.writeUInt32BE(payload.length, 1);
-    this.ws.send(Buffer.concat([header, payload]));
-    return true;
+    if (!this.ws || !this.connected) {
+      console.warn(`[provider-origin] 發送失敗 - WebSocket 未連線 (connected: ${this.connected})`);
+      return false;
+    }
+    try {
+      const macBuf = Buffer.from(this.config.deviceMac, 'utf8');
+      const dataBuf = Buffer.from(JSON.stringify(jsonData));
+      const payload = Buffer.concat([macBuf, dataBuf]);
+      const header = Buffer.alloc(5);
+      header.writeUInt8(msgType, 0);
+      header.writeUInt32BE(payload.length, 1);
+      this.ws.send(Buffer.concat([header, payload]));
+      return true;
+    } catch (error) {
+      console.error(`[provider-origin] 發送異常: ${error.message}`);
+      return false;
+    }
   }
 
   /**
@@ -68,23 +76,31 @@ class OriginStackChanProvider {
    * @param {number} speed 運動速度
    */
   sendMotion(yaw, pitch, speed) {
-    return this.sendBinary(0x04, {
+    const success = this.sendBinary(0x04, {
       type: 'bleMotion',
       pitchServo: { angle: pitch, speed },
       yawServo: { angle: yaw, speed }
     });
+    if (!success) {
+      console.warn(`[provider-origin] Motion 指令未發送 - 裝置狀態: ${this.deviceOnline ? '在線' : '離線'}`);
+    }
+    return success;
   }
 
   /**
    * 發送表情指令
    */
   sendAvatar(leftEye, rightEye, mouth) {
-    return this.sendBinary(0x03, {
+    const success = this.sendBinary(0x03, {
       type: 'bleAvatar',
       leftEye: leftEye || { x: 0, y: 0, rotation: 0, weight: 0, size: 100 },
       rightEye: rightEye || { x: 0, y: 0, rotation: 0, weight: 0, size: 100 },
       mouth: mouth || { x: 0, y: 0, rotation: 0, weight: 0, size: 50 }
     });
+    if (!success) {
+      console.warn(`[provider-origin] Avatar 指令未發送 - 裝置狀態: ${this.deviceOnline ? '在線' : '離線'}`);
+    }
+    return success;
   }
 
   /**
