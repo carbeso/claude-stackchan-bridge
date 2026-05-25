@@ -9,6 +9,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const OriginStackChanProvider = require('./providers/origin-stackchan');
+const { validateActions } = require('./lib/validate-actions');
 
 const CONFIG_PATH = path.join(__dirname, 'config.json');
 const ACTIONS_PATH = path.join(__dirname, 'actions.json');
@@ -133,6 +134,17 @@ if (fs.existsSync(CONFIG_PATH)) {
 let actions = {};
 if (fs.existsSync(ACTIONS_PATH)) {
   actions = JSON.parse(fs.readFileSync(ACTIONS_PATH, 'utf8'));
+
+  // 驗證配置格式與參數範圍
+  try {
+    validateActions(actions);
+  } catch (error) {
+    console.error(`[stackchan] 配置驗證失敗: ${error.message}`);
+    console.error(`[stackchan] 請檢查 actions.json 是否符合規格`);
+    process.exit(1);  // 配置錯誤時終止程式
+  }
+} else {
+  console.warn(`[stackchan] 找不到 ${ACTIONS_PATH}，使用空配置`);
 }
 
 /**
