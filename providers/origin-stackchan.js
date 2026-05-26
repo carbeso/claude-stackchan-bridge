@@ -7,6 +7,7 @@
 
 const crypto = require('crypto');
 const WebSocket = require('ws');
+const logger = require('../lib/logger');
 
 class OriginStackChanProvider {
   constructor(config) {
@@ -39,7 +40,7 @@ class OriginStackChanProvider {
         Buffer.from(`${mac}|${rand}|${ts}`)
       ).toString('base64');
     } catch (e) {
-      console.error('[provider-origin] 身份驗證加密失敗，請檢查 config.json 中的 serverPublicKey。');
+      logger.error('provider-origin', '身份驗證加密失敗，請檢查 config.json 中的 serverPublicKey。');
       return null;
     }
   }
@@ -51,7 +52,7 @@ class OriginStackChanProvider {
    */
   sendBinary(msgType, jsonData) {
     if (!this.ws || !this.connected) {
-      console.warn(`[provider-origin] 發送失敗 - WebSocket 未連線 (connected: ${this.connected})`);
+      logger.warn('provider-origin', `發送失敗 - WebSocket 未連線 (connected: ${this.connected})`);
       return false;
     }
     try {
@@ -64,7 +65,7 @@ class OriginStackChanProvider {
       this.ws.send(Buffer.concat([header, payload]));
       return true;
     } catch (error) {
-      console.error(`[provider-origin] 發送異常: ${error.message}`);
+      logger.error('provider-origin', `發送異常: ${error.message}`);
       return false;
     }
   }
@@ -82,7 +83,7 @@ class OriginStackChanProvider {
       yawServo: { angle: yaw, speed }
     });
     if (!success) {
-      console.warn(`[provider-origin] Motion 指令未發送 - 裝置狀態: ${this.deviceOnline ? '在線' : '離線'}`);
+      logger.warn('provider-origin', `Motion 指令未發送 - 裝置狀態: ${this.deviceOnline ? '在線' : '離線'}`);
     }
     return success;
   }
@@ -98,7 +99,7 @@ class OriginStackChanProvider {
       mouth: mouth || { x: 0, y: 0, rotation: 0, weight: 0, size: 50 }
     });
     if (!success) {
-      console.warn(`[provider-origin] Avatar 指令未發送 - 裝置狀態: ${this.deviceOnline ? '在線' : '離線'}`);
+      logger.warn('provider-origin', `Avatar 指令未發送 - 裝置狀態: ${this.deviceOnline ? '在線' : '離線'}`);
     }
     return success;
   }
@@ -108,24 +109,24 @@ class OriginStackChanProvider {
    */
   connect() {
     if (!this.config.backendServer || !this.config.serverPublicKey || !this.config.deviceMac) {
-      console.log('[provider-origin] 設定資訊不足，無法連線。');
+      logger.info('provider-origin', '設定資訊不足，無法連線。');
       return;
     }
 
     const auth = this.generateAuthorization(this.config.deviceMac);
     if (!auth) {
-      console.error('[provider-origin] 驗證 Token 生成失敗，終止連線。');
+      logger.error('provider-origin', '驗證 Token 生成失敗，終止連線。');
       return;
     }
 
     const wsUrl = `ws://${this.config.backendServer}/stackChan/ws?deviceType=App&deviceId=${this.config.deviceId}`;
 
-    console.log(`[provider-origin] 正在連線至 ${wsUrl}...`);
+    logger.info('provider-origin', `正在連線至 ${wsUrl}...`);
     this.ws = new WebSocket(wsUrl, { headers: { Authorization: auth } });
 
     this.ws.on('open', () => {
       this.connected = true;
-      console.log('[provider-origin] WebSocket 已連接');
+      logger.info('provider-origin', 'WebSocket 已連接');
       if (this.onStatusChange) this.onStatusChange();
     });
 
@@ -135,12 +136,12 @@ class OriginStackChanProvider {
         if (t === 0x17) {
           // 接收到設備在線訊號
           this.deviceOnline = true;
-          console.log('[provider-origin] StackChan 設備已上線');
+          logger.info('provider-origin', 'StackChan 設備已上線');
           if (this.onStatusChange) this.onStatusChange();
         } else if (t === 0x16) {
           // 接收到設備下線訊號
           this.deviceOnline = false;
-          console.log('[provider-origin] StackChan 設備已下線');
+          logger.info('provider-origin', 'StackChan 設備已下線');
           if (this.onStatusChange) this.onStatusChange();
         }
       }
@@ -149,7 +150,7 @@ class OriginStackChanProvider {
     this.ws.on('close', (code) => {
       this.connected = false;
       this.deviceOnline = false;
-      console.log(`[provider-origin] 連線斷開 (${code})，5秒後嘗試重連...`);
+      logger.info('provider-origin', `連線斷開 (${code})，5秒後嘗試重連...`);
       if (this.onStatusChange) this.onStatusChange();
 
       // 清除心跳計時器並排程重連
@@ -158,7 +159,7 @@ class OriginStackChanProvider {
     });
 
     this.ws.on('error', (err) => {
-      console.error('[provider-origin] 連線錯誤:', err.message);
+      logger.error('provider-origin', `連線錯誤: ${err.message}`);
     });
 
     // 設定定時心跳 (Ping) 以維持連線
