@@ -4,10 +4,14 @@
   "description": "Bridge between Claude Code hooks and StackChan via WebSocket",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "nodemon --watch actions.js --watch server.js --watch providers --watch lib server.js",
+    "start:plain": "node server.js",
     "action": "node harnesses/claude/action.js"
   },
   "dependencies": {
     "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
   }
 }
