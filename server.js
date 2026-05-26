@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const OriginStackChanProvider = require('./providers/origin-stackchan');
 const { validateActions } = require('./lib/validate-actions');
+const logger = require('./lib/logger');
 
 const CONFIG_PATH = path.join(__dirname, 'config.json');
 const ACTIONS_PATH = path.join(__dirname, 'actions.json');
@@ -53,7 +54,7 @@ class ActionController {
     this.timers = [];
     this.currentAction = null;
 
-    console.log(`[action-controller] 已取消動作: ${cancelledAction} (清除 ${timerCount} 個待執行步驟)`);
+    logger.info('action-controller', `已取消動作: ${cancelledAction} (清除 ${timerCount} 個待執行步驟)`);
   }
 
   /**
@@ -66,7 +67,7 @@ class ActionController {
    */
   run(actionName, steps) {
     if (!steps || !Array.isArray(steps) || steps.length === 0) {
-      console.error(`[action-controller] 動作 "${actionName}" 無有效步驟`);
+      logger.error('action-controller', `動作 "${actionName}" 無有效步驟`);
       return false;
     }
 
@@ -74,7 +75,7 @@ class ActionController {
     this.cancel();
 
     this.currentAction = actionName;
-    console.log(`[action-controller] 開始執行動作: ${actionName} (${steps.length} 個步驟)`);
+    logger.info('action-controller', `開始執行動作: ${actionName} (${steps.length} 個步驟)`);
 
     // 排程每個步驟
     steps.forEach((step, index) => {
@@ -87,12 +88,12 @@ class ActionController {
         } else if (step.type === 'avatar') {
           this.provider.sendAvatar(step.leftEye, step.rightEye, step.mouth);
         } else {
-          console.warn(`[action-controller] 未知的步驟類型: ${step.type} (動作: ${actionName}, 步驟: ${index})`);
+          logger.warn('action-controller', `未知的步驟類型: ${step.type} (動作: ${actionName}, 步驟: ${index})`);
         }
 
         // 若所有步驟已完成，清除 currentAction
         if (this.timers.length === 0) {
-          console.log(`[action-controller] 動作完成: ${actionName}`);
+          logger.info('action-controller', `動作完成: ${actionName}`);
           this.currentAction = null;
         }
       };
@@ -139,12 +140,12 @@ if (fs.existsSync(ACTIONS_PATH)) {
   try {
     validateActions(actions);
   } catch (error) {
-    console.error(`[stackchan] 配置驗證失敗: ${error.message}`);
-    console.error(`[stackchan] 請檢查 actions.json 是否符合規格`);
+    logger.error('stackchan', `配置驗證失敗: ${error.message}`);
+    logger.error('stackchan', '請檢查 actions.json 是否符合規格');
     process.exit(1);  // 配置錯誤時終止程式
   }
 } else {
-  console.warn(`[stackchan] 找不到 ${ACTIONS_PATH}，使用空配置`);
+  logger.warn('stackchan', `找不到 ${ACTIONS_PATH}，使用空配置`);
 }
 
 /**
@@ -192,10 +193,10 @@ const server = http.createServer((req, res) => {
 
 // 啟動伺服器並建立與 StackChan 的連線
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`[stackchan] 橋接伺服器已啟動: http://127.0.0.1:${PORT}`);
-  console.log(`[stackchan] 當前 Provider: ${provider.constructor.name}`);
-  console.log(`[stackchan] 設備 MAC: ${config.deviceMac}`);
-  console.log(`[stackchan] 已載入動作: ${Object.keys(actions).join(', ')}`);
+  logger.info('stackchan', `橋接伺服器已啟動: http://127.0.0.1:${PORT}`);
+  logger.info('stackchan', `當前 Provider: ${provider.constructor.name}`);
+  logger.info('stackchan', `設備 MAC: ${config.deviceMac}`);
+  logger.info('stackchan', `已載入動作: ${Object.keys(actions).join(', ')}`);
 
   // 開始建立 WebSocket 連線
   provider.connect();
