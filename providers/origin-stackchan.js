@@ -105,6 +105,54 @@ class OriginStackChanProvider {
   }
 
   /**
+   * 發送 RGB 燈光控制指令
+   *
+   * 注意：此方法會將表情重置為 NORMAL_FACE，動作重置為 REST position
+   *
+   * @param {string} leftColor - 左眼 RGB 顏色（HEX 格式，如 "#FF0000"）
+   * @param {string} rightColor - 右眼 RGB 顏色（HEX 格式）
+   * @param {number} durationMs - 持續時間（毫秒），預設 0 表示持續顯示
+   * @returns {boolean} 是否成功發送
+   */
+  sendRgb(leftColor, rightColor, durationMs = 0) {
+    if (!this.ws || !this.connected) {
+      logger.warn('provider-origin', `RGB 指令未發送 - WebSocket 未連線 (connected: ${this.connected})`);
+      return false;
+    }
+
+    try {
+      // 構造單幀 Dance 數據（完全符合原廠格式）
+      const danceFrame = [{
+        leftEye: { x: 0, y: 0, rotation: 0, weight: 100, size: 0 },
+        rightEye: { x: 0, y: 0, rotation: 0, weight: 100, size: 0 },
+        mouth: { x: 0, y: 0, rotation: 0, weight: 0, size: 0 },
+        yawServo: { angle: 0, speed: 500 },
+        pitchServo: { angle: 250, speed: 500 },
+        leftRgbColor: leftColor,
+        rightRgbColor: rightColor,
+        durationMs: durationMs
+      }];
+
+      const jsonString = JSON.stringify(danceFrame);
+
+      // Dance 訊息格式：[0x14][length][MAC][JSON array]
+      const macBuf = Buffer.from(this.config.deviceMac, 'utf8');
+      const dataBuf = Buffer.from(jsonString, 'utf8');
+      const payload = Buffer.concat([macBuf, dataBuf]);
+
+      const header = Buffer.alloc(5);
+      header.writeUInt8(0x14, 0);
+      header.writeUInt32BE(payload.length, 1);
+
+      this.ws.send(Buffer.concat([header, payload]));
+      return true;
+    } catch (error) {
+      logger.error('provider-origin', `發送 RGB 異常: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
    * 建立 WebSocket 連線與事件處理
    */
   connect() {

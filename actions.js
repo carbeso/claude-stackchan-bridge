@@ -396,6 +396,42 @@ async function speed_test(provider, abortSignal) {
   }
 }
 
+async function rgb_test(provider, abortSignal) {
+  console.log('[action] rgb_test: RGB 燈光測試');
+
+  try {
+    // 紅色 (持續 2 秒)
+    console.log('  → 紅色');
+    await provider.sendRgb('#FF0000', '#FF0000', 2000);
+    await wait(2500, abortSignal);
+
+    // 綠色 (持續 2 秒)
+    console.log('  → 綠色');
+    await provider.sendRgb('#00FF00', '#00FF00', 2000);
+    await wait(2500, abortSignal);
+
+    // 藍色 (持續 2 秒)
+    console.log('  → 藍色');
+    await provider.sendRgb('#0000FF', '#0000FF', 2000);
+    await wait(2500, abortSignal);
+
+    // 白色 (持續 2 秒)
+    console.log('  → 白色');
+    await provider.sendRgb('#FFFFFF', '#FFFFFF', 2000);
+    await wait(2500, abortSignal);
+
+    // 關閉
+    console.log('  → 關閉');
+    await provider.sendRgb('#000000', '#000000', 1000);
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      console.log('[action] rgb_test 已中止');
+    } else {
+      throw err;
+    }
+  }
+}
+
 /**
  * 導出所有動作
  */
@@ -420,6 +456,7 @@ module.exports = {
   breathing_animation,
   emotion_sequence,
   speed_test,
+  rgb_test,
 
   // 常數
   EXPRESSIONS,
