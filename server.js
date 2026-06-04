@@ -2,126 +2,16 @@
  * StackChan Bridge Server
  *
  * 此程式作為 AI Harnesses (如 Claude Code, Hermes Agent) 與 StackChan 機器人之間的橋樑。
- * 它接收 HTTP POST 請求，並根據 actions.json 中定義的動作序列透過 Provider 控制機器人。
+ * 它接收 HTTP POST 請求，並執行 actions.js 中定義的 JavaScript 動作函數透過 Provider 控制機器人。
  */
 
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const OriginStackChanProvider = require('./providers/origin-stackchan');
-const { validateActions } = require('./lib/validate-actions');
 
 const CONFIG_PATH = path.join(__dirname, 'config.json');
 const ACTIONS_JS_PATH = path.join(__dirname, 'actions.js');
-
-/**
- * ActionController - 動作序列執行與取消機制
- *
- * 解決 Agent 快速切換狀態（如 thinking → tool → done）時，
- * 舊動作序列與新動作序列重疊執行導致機器人動作混亂的問題。
- *
- * 核心機制：
- * - 每次執行新動作前，自動取消舊動作的所有待執行步驟
- * - 所有 setTimeout timer ID 都被追蹤，可隨時全部清除
- * - 支援 motion（伺服機動作）和 avatar（表情變換）兩種步驟類型
- */
-class ActionController {
-  /**
-   * @param {object} provider - 通訊 Provider 實例（需實作 sendMotion, sendAvatar）
-   */
-  constructor(provider) {
-    this.provider = provider;
-    this.timers = [];
-    this.currentAction = null;
-  }
-
-  /**
-   * 取消當前動作序列
-   * 清除所有排程中的 setTimeout，防止舊動作繼續執行
-   */
-  cancel() {
-    if (this.timers.length === 0) {
-      return;
-    }
-
-    // 在清除前記錄數量（清除後 timers 會變空陣列）
-    const timerCount = this.timers.length;
-    const cancelledAction = this.currentAction;
-
-    // 清除所有待執行的計時器
-    this.timers.forEach(timerId => clearTimeout(timerId));
-    this.timers = [];
-    this.currentAction = null;
-
-    console.log(`[action-controller] 已取消動作: ${cancelledAction} (清除 ${timerCount} 個待執行步驟)`);
-  }
-
-  /**
-   * 執行動作序列
-   * 先取消舊動作，再排程新動作的所有步驟
-   *
-   * @param {string} actionName - 動作名稱
-   * @param {Array} steps - 動作步驟陣列
-   * @returns {boolean} 是否成功排程
-   */
-  run(actionName, steps) {
-    if (!steps || !Array.isArray(steps) || steps.length === 0) {
-      console.error(`[action-controller] 動作 "${actionName}" 無有效步驟`);
-      return false;
-    }
-
-    // 先取消舊動作
-    this.cancel();
-
-    this.currentAction = actionName;
-    console.log(`[action-controller] 開始執行動作: ${actionName} (${steps.length} 個步驟)`);
-
-    // 排程每個步驟
-    steps.forEach((step, index) => {
-      const exec = () => {
-        // 執行後從 timers 中移除自己
-        this.timers = this.timers.filter(id => id !== timerId);
-
-        if (step.type === 'motion') {
-          this.provider.sendMotion(step.yaw, step.pitch, step.speed);
-        } else if (step.type === 'avatar') {
-          this.provider.sendAvatar(step.leftEye, step.rightEye, step.mouth);
-        } else {
-          console.warn(`[action-controller] 未知的步驟類型: ${step.type} (動作: ${actionName}, 步驟: ${index})`);
-        }
-
-        // 若所有步驟已完成，清除 currentAction
-        if (this.timers.length === 0) {
-          console.log(`[action-controller] 動作完成: ${actionName}`);
-          this.currentAction = null;
-        }
-      };
-
-      // 依據 delay 決定立即執行或延遲排程
-      let timerId;
-      if (typeof step.delay === 'number' && step.delay > 0) {
-        timerId = setTimeout(exec, step.delay);
-        this.timers.push(timerId);
-      } else {
-        // delay 為 0 或未指定時，仍使用 setTimeout(fn, 0) 以確保可取消性
-        timerId = setTimeout(exec, 0);
-        this.timers.push(timerId);
-      }
-    });
-
-    return true;
-  }
-
-  /**
-   * 回傳當前 ActionController 狀態
-   */
-  getStatus() {
-    return {
-      currentAction: this.currentAction,
-      pendingSteps: this.timers.length
-    };
-  }
-}
 
 const PORT = 7331;
 
@@ -163,7 +53,6 @@ if (fs.existsSync(ACTIONS_JS_PATH)) {
  * 若未來有 BLE 或 MQTT 需求，可在此更換實作。
  */
 const provider = new OriginStackChanProvider(config);
-const actionController = new ActionController(provider);
 
 // 用於中止無限循環動作
 let currentActionAbort = null;
