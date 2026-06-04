@@ -1,5 +1,7 @@
 # StackChan 表情與動作系統
 
+> **⚠️ 架構變更說明**：從 2026-05-25 起（PR #9），表情系統已從舊的 setInterval 動畫遷移至 **JavaScript 動作定義**（`actions.js`）。本文件提供表情參數規格與設計參考，實際使用請參考 `actions.js` 中的動作函數實作。
+
 本文件說明 StackChan 的表情控制參數與動畫系統，提供靈活的表情設計參考。
 
 ## 參數規格（來自 [issue #1](https://github.com/carbeso/claude-stackchan-bridge/issues/1)）
@@ -44,6 +46,8 @@
 | `speed` | 0 | 1000 | 500 | 轉動速度（**建議 200-500**） |
 
 ## 表情設計範例
+
+以下範例展示表情參數設計，實際使用時需包裝為 async 函數。完整範例請參考 `actions.js`。
 
 ### 正常表情（NORMAL_FACE）
 
@@ -98,159 +102,103 @@ const NORMAL_FACE = {
 // 睜眼（回到 weight: 100）
 ```
 
-## 持續動畫系統
+## 在 actions.js 中實作動作
 
-系統支援持續播放的動畫循環，適用於需要持續視覺回饋的狀態。
+### 基本結構
 
-### 動畫管理
+所有動作必須是 async 函數，接收 `provider` 和 `abortSignal` 參數。查看 `actions.js` 獲取完整範例。
 
 ```javascript
-let currentAnimation = null;
+// 範例：簡單動作
+async function done(provider, abortSignal) {
+  console.log('[action] done: 開心點頭');
+  
+  // 設定開心表情
+  await provider.sendAvatar(
+    EXPRESSIONS.happy.leftEye,
+    EXPRESSIONS.happy.rightEye,
+    EXPRESSIONS.happy.mouth
+  );
+  
+  // 點頭序列
+  await provider.sendMotion(0, 100, 400);
+  await wait(400, abortSignal);
+  await provider.sendMotion(0, 350, 400);
+  await wait(400, abortSignal);
+  
+  // 恢復正常
+  await provider.sendMotion(0, 250, 300);
+  await provider.sendAvatar(
+    NORMAL_FACE.leftEye,
+    NORMAL_FACE.rightEye,
+    NORMAL_FACE.mouth
+  );
+}
+```
 
-function stopCurrentAnimation() {
-  if (currentAnimation) {
-    clearInterval(currentAnimation);
-    currentAnimation = null;
+### 持續動畫（使用 AbortSignal）
+
+無限循環動作必須檢查 `abortSignal` 並捕獲 `AbortError`：
+
+```javascript
+async function thinking(provider, abortSignal) {
+  console.log('[action] thinking: 眼睛左右移動');
+  let direction = 1;
+  let position = 0;
+  
+  try {
+    while (!abortSignal?.aborted) {
+      position += direction * 15;
+      if (position >= 50 || position <= -50) {
+        direction *= -1;
+      }
+      await provider.sendAvatar(
+        { x: position, y: -10, rotation: 0, weight: 85, size: 0 },
+        { x: position, y: -10, rotation: 0, weight: 85, size: 0 },
+        { x: 0, y: 0, rotation: 0, weight: 0, size: 0 }
+      );
+      await wait(800, abortSignal);
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      console.log('[action] thinking 已中止');
+    } else {
+      throw err;
+    }
   }
 }
 ```
 
-**重要原則**：每個 action 執行前都必須呼叫 `stopCurrentAnimation()`，避免多個動畫同時運行。
-
-### 範例 1：眼睛左右移動（思考中）
-
-```javascript
-tool: () => {
-  stopCurrentAnimation();
-  let direction = 1;
-  let position = 0;
-  
-  currentAnimation = setInterval(() => {
-    position += direction * 15;
-    if (position >= 50 || position <= -50) {
-      direction *= -1;  // 到達邊界時反向
-    }
-    sendAvatar(
-      { x: position, y: -10, rotation: 0, weight: 85, size: 0 },
-      { x: position, y: -10, rotation: 0, weight: 85, size: 0 },
-      { x: 0, y: 0, rotation: 0, weight: 0, size: 0 }
-    );
-  }, 800);  // 每 800ms 更新一次
-}
-```
-
 **調整參數**：
-- `direction * 15`：每次移動的步進量（越大移動越快）
-- `±50`：移動範圍（眼球左右擺動幅度）
-- `800`：更新頻率（毫秒），越小動畫越流暢但負載越高
-
-### 範例 2：隨機眨眼
-
-```javascript
-working: () => {
-  stopCurrentAnimation();
-  sendMotion(0, 500, 300);  // 低頭
-  
-  let blinkState = false;
-  currentAnimation = setInterval(() => {
-    if (Math.random() > 0.7) {  // 30% 機率眨眼
-      blinkState = !blinkState;
-      sendAvatar(
-        { x: 0, y: 0, rotation: 0, weight: blinkState ? 20 : 100, size: 0 },
-        { x: 0, y: 0, rotation: 0, weight: blinkState ? 20 : 100, size: 0 },
-        NORMAL_FACE.mouth
-      );
-    }
-  }, 1500);  // 每 1.5 秒檢查一次
-}
-```
-
-### 範例 3：呼吸效果（嘴巴開合）
-
-```javascript
-breathing: () => {
-  stopCurrentAnimation();
-  let breath = 0;
-  let direction = 1;
-  
-  currentAnimation = setInterval(() => {
-    breath += direction * 5;
-    if (breath >= 20 || breath <= 0) {
-      direction *= -1;
-    }
-    sendAvatar(
-      NORMAL_FACE.leftEye,
-      NORMAL_FACE.rightEye,
-      { x: 0, y: 0, rotation: 0, weight: breath, size: 0 }  // 嘴巴緩慢開合
-    );
-  }, 1000);
-}
-```
+- `direction * 15`：每次移動的步進量
+- `±50`：移動範圍
+- `800`：更新頻率（毫秒）
 
 ## 動作設計建議
 
 ### 速度控制
 
-- **快速反應**（200-300）：適用於警報、錯誤等需要立即注意的動作
-- **正常速度**（400-500）：適用於一般互動、點頭、搖頭
-- **緩慢移動**（600-800）：適用於思考、觀察等狀態
+- **快速反應**（200-300）：警報、錯誤
+- **正常速度**（400-500）：一般互動、點頭、搖頭
+- **緩慢移動**（600-800）：思考、觀察
 
 **警告**：speed 超過 700 會讓馬達轉得太快，建議保持在 500 以下。
 
-### 組合動作（動作 + 表情）
-
-```javascript
-done: () => {
-  stopCurrentAnimation();
-  // 1. 先設定開心表情
-  sendAvatar(
-    { x: 0, y: 0, rotation: 0, weight: 100, size: 40 },
-    { x: 0, y: 0, rotation: 0, weight: 100, size: 40 },
-    { x: 0, y: 20, rotation: 0, weight: 35, size: 0 }
-  );
-  
-  // 2. 點頭動作序列
-  sendMotion(0, 100, 400);
-  setTimeout(() => sendMotion(0, 350, 400), 400);
-  setTimeout(() => sendMotion(0, 100, 400), 800);
-  
-  // 3. 恢復正常
-  setTimeout(() => {
-    sendMotion(0, REST, 300);
-    sendAvatar(NORMAL_FACE.leftEye, NORMAL_FACE.rightEye, NORMAL_FACE.mouth);
-  }, 1500);
-}
-```
-
 ### 表情轉場技巧
 
-1. **立即切換**：直接發送新表情（適用於驚訝、警報）
-2. **漸變切換**：透過 setInterval 逐步改變參數值
-3. **序列動作**：使用 setTimeout 串接多個表情
+1. **立即切換**：直接發送新表情
+2. **漸變切換**：透過 while 循環逐步改變參數值
+3. **序列動作**：使用 `await wait()` 串接多個表情
 
 ## API 使用
-
-### 發送表情
-
-```javascript
-// 方法 1：直接呼叫 sendAvatar
-sendAvatar(
-  { x: 0, y: 0, rotation: 0, weight: 100, size: 0 },  // leftEye
-  { x: 0, y: 0, rotation: 0, weight: 100, size: 0 },  // rightEye
-  { x: 0, y: 0, rotation: 0, weight: 0, size: 0 }     // mouth
-);
-
-// 方法 2：使用 NORMAL_FACE 常數
-sendAvatar(NORMAL_FACE.leftEye, NORMAL_FACE.rightEye, NORMAL_FACE.mouth);
-```
 
 ### HTTP API
 
 ```bash
-# 觸發動作（會自動處理表情 + 動畫）
+# 觸發動作
 curl -X POST http://127.0.0.1:7331/action \
   -H "Content-Type: application/json" \
-  -d '{"action":"tool"}'
+  -d '{"action":"done"}'
 
 # 直接控制表情
 curl -X POST http://127.0.0.1:7331/avatar \
@@ -265,6 +213,9 @@ curl -X POST http://127.0.0.1:7331/avatar \
 curl -X POST http://127.0.0.1:7331/motion \
   -H "Content-Type: application/json" \
   -d '{"yaw":0,"pitch":250,"speed":400}'
+
+# 查詢狀態
+curl http://127.0.0.1:7331/status
 ```
 
 ## 表情創意範例
@@ -273,9 +224,9 @@ curl -X POST http://127.0.0.1:7331/motion \
 
 ```javascript
 {
-  leftEye: { x: 20, y: -10, rotation: 0, weight: 100, size: 0 },  // 正常
-  rightEye: { x: 20, y: -10, rotation: 0, weight: 40, size: -20 }, // 瞇眼
-  mouth: { x: -10, y: 0, rotation: 0, weight: 15, size: 0 }        // 嘴巴歪一邊
+  leftEye: { x: 20, y: -10, rotation: 0, weight: 100, size: 0 },
+  rightEye: { x: 20, y: -10, rotation: 0, weight: 40, size: -20 },
+  mouth: { x: -10, y: 0, rotation: 0, weight: 15, size: 0 }
 }
 ```
 
@@ -285,7 +236,7 @@ curl -X POST http://127.0.0.1:7331/motion \
 {
   leftEye: { x: 0, y: 10, rotation: 0, weight: 60, size: -10 },
   rightEye: { x: 0, y: 10, rotation: 0, weight: 60, size: -10 },
-  mouth: { x: 0, y: 0, rotation: 0, weight: 20, size: 0 }  // 微張嘴（打哈欠）
+  mouth: { x: 0, y: 0, rotation: 0, weight: 20, size: 0 }
 }
 ```
 
@@ -295,65 +246,24 @@ curl -X POST http://127.0.0.1:7331/motion \
 {
   leftEye: { x: 0, y: -20, rotation: -200, weight: 90, size: -15 },
   rightEye: { x: 0, y: -20, rotation: 200, weight: 90, size: -15 },
-  mouth: { x: 0, y: -10, rotation: 0, weight: 0, size: -20 }  // 嘴巴抿緊
+  mouth: { x: 0, y: -10, rotation: 0, weight: 0, size: -20 }
 }
 ```
 
 ## 除錯技巧
 
-1. **眼睛消失問題**：確認 `weight` 值不為 0（0 = 閉眼）
-2. **動作不流暢**：降低 setInterval 頻率或減少步進量
-3. **表情卡住**：檢查是否有忘記呼叫 `stopCurrentAnimation()`
-4. **參數超出範圍**：依照上述規格表檢查每個參數的最大最小值
-
-## 進階應用
-
-### 情緒狀態機
-
-```javascript
-const EMOTIONS = {
-  happy: { leftEye: {...}, rightEye: {...}, mouth: {...} },
-  sad: { leftEye: {...}, rightEye: {...}, mouth: {...} },
-  angry: { leftEye: {...}, rightEye: {...}, mouth: {...} }
-};
-
-function setEmotion(emotion) {
-  const expr = EMOTIONS[emotion];
-  sendAvatar(expr.leftEye, expr.rightEye, expr.mouth);
-}
-```
-
-### 表情插值（平滑轉場）
-
-```javascript
-function morphExpression(from, to, duration) {
-  const steps = 10;
-  const interval = duration / steps;
-  let step = 0;
-  
-  const timer = setInterval(() => {
-    step++;
-    const t = step / steps;
-    
-    const leftEye = {
-      x: from.leftEye.x + (to.leftEye.x - from.leftEye.x) * t,
-      y: from.leftEye.y + (to.leftEye.y - from.leftEye.y) * t,
-      weight: from.leftEye.weight + (to.leftEye.weight - from.leftEye.weight) * t,
-      // ... 其他參數
-    };
-    
-    sendAvatar(leftEye, rightEye, mouth);
-    
-    if (step >= steps) clearInterval(timer);
-  }, interval);
-}
-```
+1. **眼睛消失**：確認 `weight` 不為 0
+2. **動作不流暢**：降低 `wait()` 頻率或減少步進量
+3. **動作被中斷**：檢查 `abortSignal` 是否正確傳入
+4. **參數超出範圍**：依照規格表檢查參數
+5. **無限循環未停止**：確認 while 條件有檢查 `!abortSignal?.aborted`
 
 ## 參考資源
 
 - [GitHub Issue #1 - 控制要精確一點](https://github.com/carbeso/claude-stackchan-bridge/issues/1)
 - [StackChan 官方 Repo](https://github.com/m5stack/StackChan)
 - WebSocket 協定：`0x03` controlAvatar 訊息格式
+- 完整實作範例：`actions.js`
 
 ---
 

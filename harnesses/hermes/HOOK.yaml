@@ -1,0 +1,9 @@
+name: stackchan-bridge
+description: Bridge for StackChan robot to react to Hermes Agent events.
+events:
+  - agent:start
+  - agent:end
+  - agent:step
+  - command:run:pre
+  - command:run:post
+  - error
